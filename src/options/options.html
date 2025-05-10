@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>发送到飞书 - 设置</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/layui/2.8.0/css/layui.min.css">
+  <script src="../utils/jquery.js"></script> <!-- 引入 jQuery -->
+  <style>
+    .container { padding: 20px; max-width: 900px; margin: 0 auto; } /* 稍微加宽以适应菜单 */
+    .layui-form-item { margin-bottom: 25px; }
+    .layui-form-label { width: 120px; }
+    .layui-input-block { margin-left: 150px; }
+    .list-container { margin-top: 10px; }
+    .list-item { display: flex; align-items: center; margin-bottom: 10px; }
+    .list-item-text { flex: 1; }
+    .list-item-actions {
+      margin-left: 10px;
+      display: inline-flex; /* 确保按钮在同一行 */
+      gap: 5px; /* 按钮之间的间距 */
+    }
+    .layui-input-wrap {
+      display: flex;
+      align-items: center;
+    }
+    .layui-input-wrap .layui-input {
+      flex-grow: 1;
+    }
+    .layui-input-wrap .layui-btn {
+      margin-left: 10px;
+    }
+    #errorMessage .layui-input-block {
+        margin-left: 0 !important; /* 确保错误消息左对齐 */
+        color: red;
+    }
+    .menu-content-panel { padding-top: 10px; } /* 为内容面板添加一些顶部填充 */
+    .list-item-actions .layui-btn i { font-size: 16px; } /* 调整图标大小 */
+    .list-item-actions .layui-btn { padding: 0 8px; } /* 调整按钮内边距，使其更紧凑 */
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="layui-row layui-col-space15">
+      <!-- Menu Column -->
+      <div class="layui-col-md3">
+        <ul class="layui-menu" id="optionsMenu">
+          <li class="layui-menu-item layui-menu-item-checked" data-menu="sendSettingsContent">
+            <a href="javascript:;">发送设置</a>
+          </li>
+          <li class="layui-menu-item" data-menu="chatManagementContent">
+            <a href="javascript:;">群聊管理</a>
+          </li>
+          <li class="layui-menu-item" data-menu="userManagementContent">
+            <a href="javascript:;">用户管理</a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Content Column -->
+      <div class="layui-col-md9">
+        <form class="layui-form" lay-filter="settingsForm">
+          <div id="errorMessage" class="layui-form-item" style="display: none;">
+            <div class="layui-input-block">
+              <!-- 错误信息将在这里显示 -->
+            </div>
+          </div>
+
+          <!-- 发送设置内容 -->
+          <div id="sendSettingsContent" class="menu-content-panel">
+            <!-- 发送模式配置 -->
+            <div class="layui-form-item">
+              <label class="layui-form-label">发送模式</label>
+              <div class="layui-input-block">
+                <input type="radio" name="sendMode" value="api" title="API模式" lay-filter="sendMode">
+                <input type="radio" name="sendMode" value="webhook" title="Webhook模式" lay-filter="sendMode">
+              </div>
+            </div>
+
+            <!-- API模式配置 -->
+            <div id="apiConfig" style="display: none;">
+              <div class="layui-form-item">
+                <label class="layui-form-label">App ID</label>
+                <div class="layui-input-block layui-input-wrap">
+                  <input type="password" name="appId" class="layui-input" placeholder="请输入App ID">
+                  <i class="layui-icon layui-icon-eye-invisible toggle-visibility" data-target="appId" style="cursor: pointer; margin-left: 10px; font-size: 20px;"></i>
+                </div>
+              </div>
+              <div class="layui-form-item">
+                <label class="layui-form-label">App Secret</label>
+                <div class="layui-input-block layui-input-wrap">
+                  <input type="password" name="appSecret" class="layui-input" placeholder="请输入App Secret">
+                  <i class="layui-icon layui-icon-eye-invisible toggle-visibility" data-target="appSecret" style="cursor: pointer; margin-left: 10px; font-size: 20px;"></i>
+                </div>
+              </div>
+              <!-- 默认接收者配置 (移入API模式) -->
+              <div class="layui-form-item">
+                <label class="layui-form-label">默认接收者类型</label>
+                <div class="layui-input-block">
+                  <select name="defaultReceiverType" lay-filter="defaultReceiverType">
+                    <option value="">请选择</option>
+                    <option value="chat">群聊</option>
+                    <option value="user">用户</option>
+                  </select>
+                </div>
+              </div>
+              <div class="layui-form-item">
+                <label class="layui-form-label">默认接收者</label>
+                <div class="layui-input-block">
+                  <select name="defaultReceiver" lay-filter="defaultReceiver">
+                    <option value="">请先选择类型</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Webhook模式配置 -->
+            <div id="webhookConfig" style="display: none;">
+              <div class="layui-form-item">
+                <label class="layui-form-label">Webhook地址</label>
+                <div class="layui-input-block">
+                  <input type="text" name="webhookUrl" class="layui-input" placeholder="请输入Webhook地址">
+                </div>
+              </div>
+            </div>
+
+            <!-- 消息格式 (移入发送设置) -->
+            <div class="layui-form-item">
+              <label class="layui-form-label">消息格式</label>
+              <div class="layui-input-block">
+                <input type="radio" name="messageFormat" value="text" title="纯文本URL">
+                <input type="radio" name="messageFormat" value="markdown" title="Markdown格式">
+              </div>
+            </div>
+
+            <!-- 保存按钮 (仅在发送设置下) -->
+            <div class="layui-form-item">
+              <div class="layui-input-block">
+                <button class="layui-btn" lay-submit lay-filter="saveSettings">保存设置</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 群聊管理内容 -->
+          <div id="chatManagementContent" class="menu-content-panel" style="display: none;">
+            <fieldset class="layui-elem-field">
+              <div class="layui-field-box">
+                <div class="layui-form-item">
+                  <div class="layui-input-block" style="margin-left: 0;">
+                    <button type="button" class="layui-btn layui-btn-sm layui-btn-normal" id="addChat" title="添加群聊"><i class="layui-icon layui-icon-add-1"></i></button>
+                  </div>
+                </div>
+                <div id="chatList" class="list-container"></div>
+              </div>
+            </fieldset>
+          </div>
+
+          <!-- 用户管理内容 -->
+          <div id="userManagementContent" class="menu-content-panel" style="display: none;">
+            <fieldset class="layui-elem-field">
+              <div class="layui-field-box">
+                <div class="layui-form-item">
+                  <div class="layui-input-block" style="margin-left: 0;">
+                    <button type="button" class="layui-btn layui-btn-sm layui-btn-normal" id="addUser" title="添加用户"><i class="layui-icon layui-icon-add-1"></i></button>
+                  </div>
+                </div>
+                <div id="userList" class="list-container"></div>
+              </div>
+            </fieldset>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="../utils/layui.js"></script>
+  <script src="options.js" type="module"></script>
+</body>
+</html>

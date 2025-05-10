@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>发送消息到飞书</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/layui/2.8.0/css/layui.min.css">
+  <script src="../utils/jquery.js"></script> <!-- 引入 jQuery -->
+  <style>
+    body { padding: 15px; min-width: 350px; }
+    .container { display: flex; flex-direction: column; height: 100%; }
+    .message-input { flex: 1; margin-bottom: 15px; }
+    .receiver-select { margin-bottom: 15px; }
+    .send-button { text-align: right; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <form class="layui-form" lay-filter="messageForm">
+      <!-- 消息输入框 -->
+      <div class="layui-form-item message-input">
+        <textarea name="message" placeholder="请输入要发送的消息" class="layui-textarea" style="height: 150px;"></textarea>
+      </div>
+
+      <!-- 接收者选择 -->
+      <div class="layui-form-item receiver-select">
+        <select name="receiver" lay-filter="receiver">
+          <option value="default">默认目标</option>
+          <optgroup label="群聊" id="chatGroup"></optgroup>
+          <optgroup label="用户" id="userGroup"></optgroup>
+        </select>
+      </div>
+
+      <!-- 发送按钮 -->
+      <div class="layui-form-item send-button">
+        <button class="layui-btn" id="sendButton">发送</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="../utils/layui.js"></script>
+  <script src="popup.js" type="module"></script>
+</body>
+</html>

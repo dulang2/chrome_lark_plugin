@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "飞书助手",
+  "version": "1.0",
+  "description": "快速将当前页面链接或自定义消息发送到飞书群聊或个人用户",
+  "icons": {
+    "16": "src/icons/icon16.png",
+    "48": "src/icons/icon48.png",
+    "128": "src/icons/icon128.png"
+  },
+  "permissions": [
+    "storage",
+    "activeTab",
+    "contextMenus",
+    "system.display",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://open.feishu.cn/*"
+  ],
+  "homepage_url": "https://kqmq0incltm.feishu.cn/docx/N4oddSM41oqvotxkGvfcgjgMnKW", // 右键插件名称跳转的地址
+  "action": {
+    "default_icon": {
+      "16": "src/icons/icon16.png",
+      "48": "src/icons/icon48.png",
+      "128": "src/icons/icon128.png"
+    },
+    "default_title": "飞书助手"
+  },
+  "background": {
+    "service_worker": "src/background/background.js"
+  },
+  "options_page": "src/options/options.html"
+}
