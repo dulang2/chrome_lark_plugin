@@ -6,11 +6,17 @@
 
 ## 主要功能
 
-*   **快速发送**：一键将当前页面的 URL 或自定义消息发送到飞书。
-*   **灵活配置**：支持通过飞书开放平台的 API 或 Webhook 两种模式发送消息。
-*   **目标管理**：可在选项页面方便地添加、编辑和删除常用的飞书群聊和个人用户，简化发送流程。
-*   **右键菜单集成** (潜在功能)：通过右键菜单快速触发发送操作（基于 `manifest.json` 中的 `contextMenus` 权限推断）。
-*   **通知反馈**：发送成功或失败时，通过浏览器通知提示用户。
+*   **多维表格集成**：通过飞书API实现与多维表格的双向数据同步，支持记录创建/更新
+*   **右键菜单操作**：支持网页文本划词快速创建多维表格记录
+*   **配置管理中心**：
+    - 飞书凭证管理（app_id/app_secret）
+    - 多维表格映射关系配置
+    - 消息模板引擎
+*   **消息推送系统**：
+    - 支持API/Webhook双模式
+    - 支持富文本消息格式
+    - 失败自动重试机制
+*   **权限分级控制**：根据飞书API权限自动启用对应功能模块
 
 ## 安装与配置
 
@@ -48,35 +54,38 @@
 ## 技术栈
 
 *   Manifest V3
-*   JavaScript
-*   HTML/CSS
-*   LayUI (用于构建 Popup 和 Options 页面的 UI)
-*   jQuery
+*   TypeScript
+*   HTML5/CSS3
+*   飞书开放平台 API（多维表格、消息推送）
+*   LayUI 前端框架
+*   Webpack 构建工具
+*   Chrome Storage API
+*   ESLint + Prettier 代码规范
 
-## 文件结构 (主要)
+## 项目结构
 
 ```
 .
-├── manifest.json         # 扩展的配置文件
-├── README.md             # 项目说明文件
+├── manifest.json         # 扩展清单文件（MV3规范）
+├── README.md             # 项目文档
 └── src/
-    ├── background/
-    │   └── background.js   # 后台服务脚本，处理核心逻辑
-    ├── icons/              # 扩展图标
-    │   ├── icon16.png
-    │   ├── icon48.png
-    │   └── icon128.png
-    ├── options/            # 选项页面
-    │   ├── options.html
-    │   └── options.js
-    ├── popup/              # 点击扩展图标弹出的页面
-    │   ├── popup.html
-    │   └── popup.js
-    └── utils/              # 工具函数和库
-        ├── constants.js
-        ├── jquery.js
-        ├── layui.js
-        └── logger.js
+    ├── background/       # 后台服务
+    │   ├── bitable.ts    # 多维表格API服务
+    │   ├── contextMenu.ts # 右键菜单管理
+    │   └── core.ts       # 核心逻辑控制
+    ├── config/           # 配置管理
+    │   ├── schema.ts     # 配置项类型定义
+    │   └── manager.ts    # 配置持久化管理
+    ├── options/          # 配置页面
+    │   ├── components/   # Vue组件
+    │   │   ├── BitableConfig.vue
+    │   │   └── CredentialForm.vue
+    │   └── store/        # Pinia状态管理
+    ├── libs/             # 第三方库
+    │   └── feishu-sdk/   # 飞书API封装
+    └── utils/
+        ├── errorHandler.ts # 统一错误处理
+        └── logger.ts     # 日志服务
 ```
 
 ## 注意事项
