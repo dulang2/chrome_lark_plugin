@@ -52,6 +52,7 @@ window.layui.use(['form', 'layer', 'element'], function () {
   // 监听保存设置
   form.on('submit(saveSettings)', function (data) {
     // 只保存发送设置相关的内容
+    console.log('保存发送设置', data); // 打印完整的表单数据，用于调试和分析
     const settingsToSave = {
       sendMode: data.field.sendMode,
       appId: data.field.appId,
@@ -70,6 +71,30 @@ window.layui.use(['form', 'layer', 'element'], function () {
       // 校验失败的提示已在 validateSettings 中处理
     }
     return false; // 阻止表单默认提交
+  });
+
+  // 保存多维表格设置
+  form.on('submit(saveBitableSettings)', function (data) {
+    console.log('多维表格设置保存', data);
+    const bitableSettings = {
+      bitableAppToken: data.field.bitableAppToken,
+      bitableTableId: data.field.bitableTableId,
+      bitableUrlFieldName: data.field.bitableUrlFieldName || 'URL',
+      bitableTitleFieldName: data.field.bitableTitleFieldName || '标题'
+    };
+
+    // 验证必填项
+    if (!bitableSettings.bitableAppToken || !bitableSettings.bitableTableId || !bitableSettings.bitableUrlFieldName || !bitableSettings.bitableTitleFieldName) {
+      layer.msg('App Token、Table ID、URL字段名和标题字段名不能为空', { icon: 2 });
+      return false;
+    }
+
+    // 保存到chrome.storage
+    chrome.storage.sync.set(bitableSettings , function() {
+      layer.msg('多维表格设置保存成功', { icon: 1 });
+    });
+
+    return false; // 阻止表单提交
   });
 
   // 添加 App ID 和 App Secret 可见性切换逻辑

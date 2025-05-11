@@ -52,6 +52,9 @@
           <li class="layui-menu-item" data-menu="userManagementContent">
             <a href="javascript:;">用户管理</a>
           </li>
+          <li class="layui-menu-item" data-menu="bitableSettingsContent">
+            <a href="javascript:;">多维表格设置</a>
+          </li>
         </ul>
       </div>
 
@@ -166,12 +169,71 @@
               </div>
             </fieldset>
           </div>
+
+          <!-- 多维表格设置内容 -->
+          <div id="bitableSettingsContent" class="menu-content-panel" style="display: none;">
+            <div class="layui-form-item">
+              <label class="layui-form-label">app_token
+                <a href="https://open.feishu.cn/document/server-docs/docs/bitable-v1/app-table-record/create" target="_blank" class="layui-icon layui-icon-tips" style="margin-left: 5px; text-decoration: none;" lay-tips="多维表格唯一标识符，用于标识一个多维表格应用。"></a>
+              </label>
+              <div class="layui-input-block layui-input-wrap">
+                <input type="text" name="bitableAppToken" class="layui-input" placeholder="请输入多维表格 app_token">
+                <i class="layui-icon layui-icon-eye-invisible toggle-visibility" data-target="appId" style="cursor: pointer; margin-left: 10px; font-size: 20px;"></i>
+              </div>
+            </div>
+            <div class="layui-form-item">
+              <label class="layui-form-label">table_id
+                <a href="https://open.feishu.cn/document/server-docs/docs/bitable-v1/app-table-record/create" target="_blank" class="layui-icon layui-icon-tips" style="margin-left: 5px; text-decoration: none;" lay-tips="数据表ID，用于标识多维表格应用中的一个数据表。"></a>
+              </label>
+              <div class="layui-input-block layui-input-wrap">
+                <input type="text" name="bitableTableId" class="layui-input" placeholder="请输入多维表格 table_id">
+                <i class="layui-icon layui-icon-eye-invisible toggle-visibility" data-target="appId" style="cursor: pointer; margin-left: 10px; font-size: 20px;"></i>
+              </div>
+            </div>
+            <div class="layui-form-item">
+              <label class="layui-form-label">URL字段名</label>
+              <div class="layui-input-block">
+                <input type="text" name="bitableUrlFieldName" class="layui-input" placeholder="请输入用于存储URL的字段名" value="链接">
+              </div>
+            </div>
+            <div class="layui-form-item">
+              <label class="layui-form-label">标题字段名</label>
+              <div class="layui-input-block">
+                <input type="text" name="bitableTitleFieldName" class="layui-input" placeholder="请输入用于存储标题的字段名" value="标题">
+              </div>
+            </div>
+            <div class="layui-form-item">
+              <div class="layui-input-block">
+                <button class="layui-btn" lay-submit lay-filter="saveBitableSettings">保存多维表格设置</button>
+              </div>
+            </div>
+          </div>
         </form>
       </div>
     </div>
   </div>
 
   <script src="../utils/layui.js"></script>
+<script>
+  layui.use(['form', 'layer', 'element'], function(){
+    var form = layui.form;
+    var layer = layui.layer;
+    var element = layui.element;
+
+    // 初始化提示
+    $(document).on('mouseenter', '[lay-tips]', function(){
+      var tipText = $(this).attr('lay-tips');
+      layer.tips(tipText, this, {
+        tips: [1, '#3595CC'], // 上方显示，自定义颜色
+        time: 0 // 不自动关闭
+      });
+    }).on('mouseleave', '[lay-tips]', function(){
+      layer.closeAll('tips');
+    });
+
+    // 其他已有的JavaScript代码...
+  });
+</script>
   <script src="options.js" type="module"></script>
 </body>
 </html>

@@ -3,6 +3,8 @@
 const POPUP_WIDTH = 400;
 const POPUP_MARGIN = 100;
 
+const BADGE_DISPLAY_TIME = 2000; // 徽章显示时间2秒
+
 // 常量定义
 const STORAGE_KEY = {
   DEFAULT_RECEIVER: 'defaultReceiver',
@@ -13,7 +15,12 @@ const STORAGE_KEY = {
   APP_SECRET: 'appSecret',
   WEBHOOK_URL: 'webhookUrl',
   CHAT_LIST: 'chatList',
-  USER_LIST: 'userList'
+  USER_LIST: 'userList',
+    // 多维表格相关配置
+    BITABLE_APP_TOKEN: 'bitableAppToken',
+    BITABLE_TABLE_ID: 'bitableTableId',
+    BITABLE_URL_FIELD_NAME: 'bitableUrlFieldName',
+    BITABLE_TITLE_FIELD_NAME: 'bitableTitleFieldName'
 };
 
 // 获取主显示器信息
@@ -40,6 +47,12 @@ chrome.runtime.onInstalled.addListener(() => {
     title: '发送自定义消息到飞书',
     contexts: ['page', 'action']
   });
+  // 新增收藏到多维表格菜单项
+  chrome.contextMenus.create({
+    id: 'saveToBitable',
+    title: '收藏到多维表格',
+    contexts: ['page', 'action']
+  });
 });
 
 // 处理上下文菜单点击
@@ -60,6 +73,57 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       top: 100,
       left: windowPosition
     });
+  } else if (info.menuItemId === 'saveToBitable') {
+    // 处理收藏到多维表格
+    try {
+      const url = tab.url;
+      const title = tab.title;
+      // 调用飞书API将网页信息保存到多维表格
+      const accessToken = await getTenantAccessToken();
+    // 获取多维表格配置
+    const { bitableAppToken, bitableTableId } = await chrome.storage.sync.get([
+    STORAGE_KEY.BITABLE_APP_TOKEN,
+    STORAGE_KEY.BITABLE_TABLE_ID
+    ]);
+    
+    if (!bitableAppToken || !bitableTableId) {
+    throw new Error('未配置多维表格应用信息，请前往选项页配置');
+    }
+    
+    console.log(`[${new Date().toISOString()}] INFO - 正在保存到多维表格 | AppToken: ${bitableAppToken?.slice(0, 3)}*** TableID: ${bitableTableId?.slice(0, 3)}***`);
+    const response = await fetch(`https://open.feishu.cn/open-apis/bitable/v1/apps/${bitableAppToken}/tables/${bitableTableId}/records`, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + accessToken,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          fields: {
+            '标题': title,
+            '链接': { link: url }
+          }
+        })
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      // 收藏成功状态提示
+    await chrome.action.setBadgeText({ text: '√' });
+    await chrome.action.setBadgeBackgroundColor({ color: '#00ff00' });
+    console.log(`[${new Date().toISOString()}] INFO - 成功保存到多维表格`);
+    } catch (error) {
+       // 收藏失败状态提示
+    await chrome.action.setBadgeText({ text: '×' });
+    await chrome.action.setBadgeBackgroundColor({ color: '#ff0000' });
+      // 处理错误
+      console.error(`[${new Date().toISOString()}] ERROR - 保存到多维表格失败 | 错误: ${error}`);
+    } finally {
+      // 添加自动清除状态的定时器
+      setTimeout(async () => {
+        await chrome.action.setBadgeText({ text: '' });
+        console.log(`[${new Date().toISOString()}] INFO - 清除状态徽章`);
+      }, BADGE_DISPLAY_TIME);
+    }
   }
 });
 
@@ -148,9 +212,6 @@ chrome.action.onClicked.addListener(async (tab) => {
 });
 
 // 发送消息到飞书 (重构版本)
-// 常量定义
-const BADGE_DISPLAY_TIME = 3000; // 徽章显示时间3秒
-
 async function sendMessage(content, explicitReceiverFromPopup = null, sendModeOverrideFromPopup = null) {
   try {
     console.log(`[${new Date().toISOString()}] INFO - sendMessage 调用 | 内容: ${content ? '有' : '无'} | explicitReceiver: ${JSON.stringify(explicitReceiverFromPopup)} | sendModeOverride: ${sendModeOverrideFromPopup}`);
@@ -241,7 +302,11 @@ async function sendMessage(content, explicitReceiverFromPopup = null, sendModeOv
 // 通过API发送消息
 async function sendViaApi(content, receiver, config) {
   // 获取tenant_access_token
-  const tokenResponse = await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal', {
+  // 详细记录请求参数
+  console.log(`[${new Date().toISOString()}] DEBUG - sendViaApi: 请求tenant_access_token | App ID: ${config.appId ? '已提供' : '未提供'}, App Secret: ${config.appSecret ? '已提供' : '未提供'}`);
+  let tokenResponse;
+  try {
+    tokenResponse = await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -251,11 +316,40 @@ async function sendViaApi(content, receiver, config) {
       'app_secret': config.appSecret
     })
   });
-
-  const tokenData = await tokenResponse.json();
-  if (tokenData.code !== 0) {
-    throw new Error(`获取token失败: ${tokenData.msg}`);
+  } catch (fetchError) {
+    // 捕获 fetch 本身的错误，例如网络问题、DNS问题等
+    console.error(`[${new Date().toISOString()}] ERROR - sendViaApi: 获取tenant_access_token时fetch调用失败 | 错误: ${fetchError.message}`, fetchError);
+    throw new Error(`网络请求失败 (获取token): ${fetchError.message}`);
   }
+
+  // 详细记录响应状态
+  console.log(`[${new Date().toISOString()}] DEBUG - sendViaApi: 获取tenant_access_token响应状态 | Status: ${tokenResponse.status}, StatusText: ${tokenResponse.statusText}`);
+  if (!tokenResponse.ok) {
+    // 如果响应状态不是 2xx，尝试读取响应体以获取更多错误信息
+    let errorBody = '';
+    try {
+      errorBody = await tokenResponse.text();
+    } catch (e) {
+      console.warn(`[${new Date().toISOString()}] WARN - sendViaApi: 读取token错误响应体失败`, e);
+    }
+    console.error(`[${new Date().toISOString()}] ERROR - sendViaApi: 获取tenant_access_token响应非成功状态 | Status: ${tokenResponse.status}, Body: ${errorBody}`);
+    throw new Error(`获取token失败: HTTP ${tokenResponse.status} - ${tokenResponse.statusText}. Response: ${errorBody}`);
+  }
+
+  let tokenData;
+  try {
+    tokenData = await tokenResponse.json();
+  } catch (jsonError) {
+    console.error(`[${new Date().toISOString()}] ERROR - sendViaApi: 解析token响应JSON失败 | 错误: ${jsonError.message}`, jsonError);
+    throw new Error(`解析token响应失败: ${jsonError.message}`);
+  }
+
+  console.log(`[${new Date().toISOString()}] DEBUG - sendViaApi: 获取tenant_access_token响应数据 | Code: ${tokenData.code}, Msg: ${tokenData.msg}`);
+  if (tokenData.code !== 0) {
+    console.error(`[${new Date().toISOString()}] ERROR - sendViaApi: 获取token API返回错误 | Code: ${tokenData.code}, Msg: ${tokenData.msg}`);
+    throw new Error(`获取token失败: ${tokenData.msg} (Code: ${tokenData.code})`);
+  }
+
 
   // 发送消息
   // 验证receive_id格式
@@ -292,10 +386,15 @@ const messageBody = {
   };
   // 确保receive_id_type与receive_id匹配
   if (!messageBody.receive_id_type) {
+    console.error(`[${new Date().toISOString()}] ERROR - sendViaApi: messageBody.receive_id_type 为空`);
     throw new Error('receive_id_type字段不能为空');
   }
 
-  const response = await fetch('https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=' + messageBody.receive_id_type, {
+  // 详细记录发送消息的请求体和头部
+  console.log(`[${new Date().toISOString()}] DEBUG - sendViaApi: 准备发送消息 | URL: https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=${messageBody.receive_id_type}, Body: ${JSON.stringify(messageBody)}`);
+  let response;
+  try {
+    response = await fetch('https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=' + messageBody.receive_id_type, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -303,11 +402,39 @@ const messageBody = {
     },
     body: JSON.stringify(messageBody)
   });
+  } catch (fetchError) {
+    // 捕获 fetch 本身的错误
+    console.error(`[${new Date().toISOString()}] ERROR - sendViaApi: 发送消息时fetch调用失败 | 错误: ${fetchError.message}`, fetchError);
+    throw new Error(`网络请求失败 (发送消息): ${fetchError.message}`);
+  }
 
-  const data = await response.json();
+  // 详细记录响应状态
+  console.log(`[${new Date().toISOString()}] DEBUG - sendViaApi: 发送消息响应状态 | Status: ${response.status}, StatusText: ${response.statusText}`);
+  if (!response.ok) {
+    let errorBody = '';
+    try {
+      errorBody = await response.text();
+    } catch (e) {
+      console.warn(`[${new Date().toISOString()}] WARN - sendViaApi: 读取消息错误响应体失败`, e);
+    }
+    console.error(`[${new Date().toISOString()}] ERROR - sendViaApi: 发送消息响应非成功状态 | Status: ${response.status}, Body: ${errorBody}`);
+    throw new Error(`发送消息失败: HTTP ${response.status} - ${response.statusText}. Response: ${errorBody}`);
+  }
+
+  let data;
+  try {
+    data = await response.json();
+  } catch (jsonError) {
+    console.error(`[${new Date().toISOString()}] ERROR - sendViaApi: 解析消息响应JSON失败 | 错误: ${jsonError.message}`, jsonError);
+    throw new Error(`解析消息响应失败: ${jsonError.message}`);
+  }
+
+  console.log(`[${new Date().toISOString()}] DEBUG - sendViaApi: 发送消息响应数据 | Code: ${data.code}, Msg: ${data.msg}`);
   if (data.code !== 0) {
+    console.error(`[${new Date().toISOString()}] ERROR - sendViaApi: 发送消息 API返回错误 | Code: ${data.code}, Msg: ${data.msg}, RequestID: ${data.request_id || '未知'}`);
     throw new Error(`发送消息失败: ${data.msg} (错误代码: ${data.code}, 请求ID: ${data.request_id || '未知'})`);
   }
+  console.log(`[${new Date().toISOString()}] INFO - sendViaApi: 消息发送成功 | RequestID: ${data.request_id || '未知'}`);
 }
 
 // 通过Webhook发送消息
@@ -377,5 +504,38 @@ async function createPopupWindow(url) {
   } catch (error) {
     console.error('创建窗口失败', error, { context: 'createPopupWindow' });
     throw new Error('窗口创建失败: ' + error.message);
+  }
+}
+
+// 认证相关工具函数
+
+// 获取tenant_access_token
+async function getTenantAccessToken() {
+  try {
+    const config = await chrome.storage.sync.get([
+      'appId',
+      'appSecret'
+    ]);
+
+    const response = await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        app_id: config.appId,
+        app_secret: config.appSecret
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`获取tenant_access_token失败，状态码：${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.tenant_access_token;
+  } catch (error) {
+    console.error(`获取tenant_access_token失败：${error.message}`);
+    throw error;
   }
 }

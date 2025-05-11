@@ -16,7 +16,12 @@ async function loadSettings() {
     messageFormat: settings.messageFormat || 'text', // 默认text
     // 只有当API模式时，才加载默认接收者类型和ID
     defaultReceiverType: settings.sendMode === 'api' ? (settings.defaultReceiverType || '') : '',
-    defaultReceiver: settings.sendMode === 'api' ? (settings.defaultReceiver || '') : ''
+    defaultReceiver: settings.sendMode === 'api' ? (settings.defaultReceiver || '') : '',
+    // 多维表格配置项
+    bitableAppToken: settings.bitableAppToken || '',
+    bitableTableId: settings.bitableTableId || '',
+    bitableUrlFieldName: settings.bitableUrlFieldName || '链接',
+    bitableTitleFieldName: settings.bitableTitleFieldName || '标题'
   });
 
   // 显示对应的配置区域 (API/Webhook)
@@ -120,7 +125,7 @@ async function saveOnlySendSettings(data) {
     }
 
     await chrome.storage.sync.set(settingsToStore);
-    layui.layer.msg('发送设置已保存');
+    layer.msg('发送设置已保存', { icon: 1 });
   } catch (error) {
     logger.error('保存发送设置失败', error, { context: 'saveOnlySendSettings' });
     layui.layer.msg('保存失败，请查看控制台日志。', { icon: 2 });
